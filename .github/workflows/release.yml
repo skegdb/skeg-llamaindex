@@ -1,0 +1,9 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+jobs:
+  publish:
+    uses: skegdb/.github/.github/workflows/release-pypi.yml@main
+    secrets:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
