@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "skeg-llamaindex"
-version = "0.1.0a0"
+version = "0.1.0"
 description = "LlamaIndex VectorStore adapter for skeg."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -12,7 +12,7 @@ license = { text = "Apache-2.0" }
 authors = [{ name = "skeg authors" }]
 keywords = ["llamaindex", "vector-store", "skeg", "rag"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
@@ -23,15 +23,18 @@ classifiers = [
     "Framework :: LlamaIndex",
 ]
 dependencies = [
-    # We expect skeg-py to be installed in editable mode from the
-    # monorepo (../python). For an actual PyPI release we'll pin a
-    # version: "skeg>=0.1,<0.2".
-    "skeg",
-    # llama-index-core is intentionally a soft dependency: the adapter
-    # imports from it lazily so importing this package without
-    # llama-index installed only fails at instantiation time, not at
-    # `import skeg_llamaindex`.
+    # `skeg` is the Python client. Pinned to the same major as this
+    # adapter so a major bump on either side is a deliberate breaking
+    # change.
+    "skeg>=0.1.0,<0.2",
+    # llama-index-core is imported lazily by the adapter, so `import
+    # skeg_llamaindex` only fails at instantiation time if it is
+    # missing.
     "llama-index-core>=0.10",
+    # The adapter hashes node ids with xxh64 to produce u64 vector ids
+    # for skeg's `SKEG.VSET` (the wire id is fixed-width). Pinned to
+    # match what skeg-py uses internally.
+    "xxhash>=3.0",
 ]
 
 [project.optional-dependencies]

@@ -16,12 +16,11 @@ Quick start:
     storage_ctx = StorageContext.from_defaults(vector_store=store)
     index = VectorStoreIndex.from_documents(docs, storage_context=storage_ctx)
 
-Status: alpha. Designed to work with llama-index-core 0.10+. Untested
-against the experimental llama-index-core 0.11 API.
+Requires `llama-index-core >= 0.10`.
 """
 from __future__ import annotations
 
 from .vector_store import SkegVectorStore
 
 __all__ = ["SkegVectorStore"]
-__version__ = "0.1.0a0"
+__version__ = "0.1.0"
