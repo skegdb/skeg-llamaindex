@@ -12,11 +12,13 @@ import pytest
 
 llama_index = pytest.importorskip("llama_index.core")
 
-import numpy as np
-from llama_index.core.schema import TextNode
-from llama_index.core.vector_stores.types import VectorStoreQuery
+# These imports run only when llama-index-core is installed; the
+# importorskip above gates them. ruff E402 is silenced for this
+# canonical pytest pattern.
+from llama_index.core.schema import TextNode  # noqa: E402
+from llama_index.core.vector_stores.types import VectorStoreQuery  # noqa: E402
 
-from skeg_llamaindex import SkegVectorStore
+from skeg_llamaindex import SkegVectorStore  # noqa: E402
 
 
 def _vec(dim: int, seed: int) -> list[float]:

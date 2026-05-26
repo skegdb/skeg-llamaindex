@@ -50,7 +50,7 @@ print(engine.query("what does the first doc say?"))
 | Use case | `backend` | Notes |
 | --- | --- | --- |
 | Personal AI, < 50K nodes | `flat` | Exhaustive scan; fast on M-series CPUs |
-| RAG over a fixed corpus, > 50K nodes | `disk_vamana` (pre-build) | Use `skeg-tool build`, then serve read-only |
+| RAG over a fixed corpus, > 50K nodes | `disk_vamana` (pre-build) | Use `skeg-cli build`, then serve read-only |
 | Streaming insert with eventual large size | `disk_vamana` (RW) | Delta WAL handles streaming |
 
 For the pre-build path, build offline once and start the server in
