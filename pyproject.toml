@@ -21,7 +21,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Database",
-    "Framework :: LlamaIndex",
 ]
 dependencies = [
     # `skeg` is the Python client. Pinned to the same major as this
