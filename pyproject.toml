@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-authors = [{ name = "skeg authors" }]
+authors = [{ name = "skeg contributors" }]
 keywords = ["llamaindex", "vector-store", "skeg", "rag"]
 classifiers = [
     "Development Status :: 4 - Beta",
