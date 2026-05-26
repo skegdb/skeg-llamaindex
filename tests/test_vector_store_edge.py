@@ -273,3 +273,131 @@ def test_from_uri_rejects_missing_index_name(binary_server: dict) -> None:
 def test_from_uri_rejects_wrong_scheme() -> None:
     with pytest.raises(ValueError, match="scheme"):
         SkegVectorStore.from_uri("redis://127.0.0.1:7379/x", dim=8)
+
+
+def test_query_populates_nodes_with_text_and_metadata(store: SkegVectorStore) -> None:
+    """`stores_text=True` means `query` must return `TextNode` objects,
+    not just ids. Verifies the contract the adapter advertises."""
+    from llama_index.core.schema import TextNode
+
+    nodes = [
+        TextNode(
+            text=f"body-{i}",
+            embedding=_vec(8, seed=i + 200),
+            metadata={"i": i},
+        )
+        for i in range(3)
+    ]
+    store.add(nodes)
+    q = VectorStoreQuery(query_embedding=nodes[1].embedding, similarity_top_k=3)
+    result = store.query(q)
+
+    assert result.nodes is not None and len(result.nodes) == 3
+    by_id = {n.id_: n for n in result.nodes}
+    for n in nodes:
+        assert n.node_id in by_id
+        got = by_id[n.node_id]
+        assert isinstance(got, TextNode)
+        assert got.text == n.text
+        assert got.metadata["i"] == n.metadata["i"]
+
+
+def test_get_nodes_returns_text_in_input_order(store: SkegVectorStore) -> None:
+    from llama_index.core.schema import TextNode
+
+    nodes = [
+        TextNode(text=f"t-{i}", embedding=_vec(8, seed=i + 300))
+        for i in range(4)
+    ]
+    store.add(nodes)
+    ids_in_order = [nodes[2].node_id, nodes[0].node_id, "missing", nodes[3].node_id]
+    got = store.get_nodes(ids_in_order)
+    assert len(got) == 4
+    assert isinstance(got[0], TextNode) and got[0].text == "t-2"
+    assert isinstance(got[1], TextNode) and got[1].text == "t-0"
+    assert got[2] is None
+    assert isinstance(got[3], TextNode) and got[3].text == "t-3"
+
+
+def test_get_nodes_empty_input_returns_empty_list(store: SkegVectorStore) -> None:
+    assert store.get_nodes([]) == []
+
+
+def test_close_closes_owned_client_only(binary_server: dict) -> None:
+    """A store from `from_uri` owns its client; `close()` closes it.
+    A store constructed with an external client must NOT close it on
+    behalf of the caller."""
+    from skeg import BinaryClient
+
+    # from_uri owns the client.
+    host, port = binary_server["host"], binary_server["port"]
+    s = SkegVectorStore.from_uri(
+        f"skeg://{host}:{port}/notes-close-1", dim=8,
+    )
+    s.close()
+    assert not s._owns_client  # idempotent flag flipped
+
+    # Externally provided client is NOT owned and must survive close().
+    client = BinaryClient.connect(host, port)
+    try:
+        s2 = SkegVectorStore(client=client, index_name="notes-close-2", dim=8)
+        s2.close()
+        # Still usable; close() was a no-op on the borrowed client.
+        client.ping()
+    finally:
+        client.close()
+
+
+def test_context_manager_closes_on_exit(binary_server: dict) -> None:
+    host, port = binary_server["host"], binary_server["port"]
+    with SkegVectorStore.from_uri(
+        f"skeg://{host}:{port}/notes-ctx", dim=8,
+    ) as s:
+        assert s._owns_client
+    assert not s._owns_client
+
+
+def test_from_uri_rejects_bad_kind(binary_server: dict) -> None:
+    host, port = binary_server["host"], binary_server["port"]
+    with pytest.raises(ValueError, match="kind="):
+        SkegVectorStore.from_uri(
+            f"skeg://{host}:{port}/notes-bad-kind", dim=8, kind="weird"
+        )
+
+
+def test_from_uri_rejects_bad_backend(binary_server: dict) -> None:
+    host, port = binary_server["host"], binary_server["port"]
+    with pytest.raises(ValueError, match="backend="):
+        SkegVectorStore.from_uri(
+            f"skeg://{host}:{port}/notes-bad-backend", dim=8, backend="weird"
+        )
+
+
+def test_construct_rejects_zero_or_negative_dim(binary_server: dict) -> None:
+    from skeg import BinaryClient
+
+    host, port = binary_server["host"], binary_server["port"]
+    c = BinaryClient.connect(host, port)
+    try:
+        with pytest.raises(ValueError, match="dim"):
+            SkegVectorStore(client=c, index_name="x", dim=0)
+        with pytest.raises(ValueError, match="dim"):
+            SkegVectorStore(client=c, index_name="x", dim=-1)
+    finally:
+        c.close()
+
+
+def test_construct_rejects_empty_index_name(binary_server: dict) -> None:
+    from skeg import BinaryClient
+
+    host, port = binary_server["host"], binary_server["port"]
+    c = BinaryClient.connect(host, port)
+    try:
+        with pytest.raises(ValueError, match="index_name"):
+            SkegVectorStore(client=c, index_name="", dim=8)
+    finally:
+        c.close()
+
+
+def test_add_empty_returns_empty_list(store: SkegVectorStore) -> None:
+    assert store.add([]) == []
