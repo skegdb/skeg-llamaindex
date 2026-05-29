@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Pre-push gate: ruff format + ruff lint + pytest. Skip with SKIP_PREPUSH=1.
+set -euo pipefail
+[[ "${SKIP_PREPUSH:-0}" == "1" ]] && { echo "pre-push: skipped" >&2; exit 0; }
+step() { printf "\n\033[1;36m▸ pre-push: %s\033[0m\n" "$1" >&2; }
+fail() { printf "\n\033[1;31m✗ pre-push failed at: %s\033[0m\n" "$1" >&2; exit 1; }
+if command -v ruff >/dev/null 2>&1; then
+    step "ruff format --check ."
+    ruff format --check . || fail "ruff format"
+    step "ruff check ."
+    ruff check . || fail "ruff check"
+else
+    echo "pre-push: ruff not found, skipping format+lint (pip install ruff)" >&2
+fi
+if [[ -d tests ]] || ls test_*.py 2>/dev/null | head -1 | grep -q .; then
+    if command -v pytest >/dev/null 2>&1; then
+        step "pytest -q"
+        pytest -q || fail "pytest"
+    else
+        echo "pre-push: pytest not found, skipping tests (pip install pytest)" >&2
+    fi
+fi
+printf "\n\033[1;32m✓ pre-push gate passed\033[0m\n" >&2
